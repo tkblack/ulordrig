@@ -24,7 +24,7 @@
 
 #include "App.h"
 
-#ifdef WIN32
+#ifdef WIN32_HASHRATE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -46,7 +46,9 @@ void *StartServer(void*)
  
   SOCKET  listenfd, connfd;
   socklen_t clientLen;
-
+  char sendBuf[150];
+  memset(sendBuf, 0, sizeof(sendBuf));
+ 
   //initial socket on windows
   WSADATA wsadata;
   if(WSAStartup(MAKEWORD(1,1),&wsadata) != 0)
@@ -99,7 +101,6 @@ void *StartServer(void*)
     int reject = App::m_selfother->ret_rej();
     int sum = reject + accepted;
 
-    char sendBuf[150];
     memset(sendBuf, 0, sizeof(sendBuf));
 
     sprintf(sendBuf, "Hashrate/ %f accept/ %d total/ %d", hashrate_d, accepted, sum);
@@ -119,7 +120,7 @@ int main(int argc, char **argv)
 {
     App app(argc, argv);
 
-    #ifdef WIN32
+    #ifdef WIN32_HASHRATE
     pthread_t pstartServer;
     pthread_create(&pstartServer, NULL, StartServer, NULL);
     pthread_detach(pstartServer);	

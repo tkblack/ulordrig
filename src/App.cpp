@@ -52,7 +52,7 @@
 
 
 App *App::m_self = nullptr;
-App * App::m_selfother = nullptr;
+App *App::m_selfother = nullptr;
 
 
 App::App(int argc, char **argv) :
@@ -130,13 +130,12 @@ int App::exec()
     background();
 
 	if(!cryptoHello::init()){
-	    LOG_ERR("hello init failed.");
+	    LOG_ERR("cryptohello init failed.");
 		return 1;
 	}
 
     Mem::allocate(m_options->algo(), m_options->threads(), m_options->hugePages());
     Summary::print();
-
     if (m_options->dryRun()) {
         LOG_NOTICE("OK");
         release();

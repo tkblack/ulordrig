@@ -70,7 +70,8 @@ Client::Client(int id, const char *agent, IClientListener *listener) :
     m_expire(0),
     m_jobs(0),
     m_stream(nullptr),
-    m_socket(nullptr)
+    m_socket(nullptr),
+    m_isDormancy(false)
 {
     memset(m_ip, 0, sizeof(m_ip));
     memset(&m_hints, 0, sizeof(m_hints));
@@ -203,7 +204,12 @@ int64_t Client::submit(const JobResult &result)
 
 bool Client::close()
 {
-    if (m_state == UnconnectedState || m_state == ClosingState || !m_socket) {
+    if (m_state == UnconnectedState || m_state == ClosingState) {
+        return false;
+    }
+
+    if (!m_socket){
+        setState(UnconnectedState);
         return false;
     }
 
@@ -223,7 +229,7 @@ bool Client::close()
 
             delete req;
         });
-
+        
         assert(rc == 0);
 
         if (rc != 0) {
@@ -349,7 +355,6 @@ int Client::resolve(const char *host)
     if (m_failures == -1) {
         m_failures = 0;
     }
-
     const int r = uv_getaddrinfo(uv_default_loop(), &m_resolver, Client::onResolved, host, nullptr, &m_hints);
     if (r) {
         if (!m_quiet) {
@@ -613,9 +618,17 @@ void Client::ping()
     send(snprintf(m_sendBuf, sizeof(m_sendBuf), "{\"id\":%" PRId64 ",\"jsonrpc\":\"2.0\",\"method\":\"keepalived\",\"params\":{\"id\":\"%s\"}}\n", m_sequence, m_rpcId.data()));
 }
 
+void Client::setDormancy(bool ifDormancy){
+    m_isDormancy = ifDormancy;
+}
 
 void Client::reconnect()
 {
+
+    if (m_isDormancy){
+        return;
+    }
+
     if (!m_listener) {
         delete this;
 
@@ -629,7 +642,6 @@ void Client::reconnect()
         uv_timer_stop(&m_keepAliveTimer);
     }
 #   endif
-
     if (m_failures == -1) {
         return m_listener->onClose(this, -1);
     }
@@ -685,7 +697,6 @@ void Client::onClose(uv_handle_t *handle)
     if (!client) {
         return;
     }
-
     client->onClose();
 }
 
@@ -770,6 +781,7 @@ void Client::onRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf)
 
 void Client::onResolved(uv_getaddrinfo_t *req, int status, struct addrinfo *res)
 {
+
     auto client = getClient(req->data);
     if (!client) {
         return;

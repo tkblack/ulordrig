@@ -67,7 +67,6 @@ Network::Network(const Options *options) :
 
     m_timer.data = this;
     uv_timer_init(uv_default_loop(), &m_timer);
-
     uv_timer_start(&m_timer, Network::onTick, kTickInterval, kTickInterval);
 }
 
@@ -135,19 +134,22 @@ void Network::onPause(IStrategy *strategy)
     }
 
     if (!m_strategy->isActive()) {
-        LOG_ERR("no active pools, stop mining");
+        LOG_ERR("The current pool connection is interrupted, loading...");
         m_state.stop();
         return Workers::pause();
     }
 }
+
 int Network::ret_accpeted(){
- //m_state.add(result, error);
+
  return  m_state.accepted;
 }
+
 int Network::ret_rejected(){
- //m_state.add(result, error);
+
  return  m_state.rejected;
 }
+
 void Network::onResultAccepted(IStrategy *strategy, Client *client, const SubmitResult &result, const char *error)
 {
     m_state.add(result, error);
@@ -182,7 +184,6 @@ void Network::setJob(Client *client, const Job &job, bool donate)
 void Network::tick()
 {
     const uint64_t now = uv_now(uv_default_loop());
-
     m_strategy->tick(now);
 
     if (m_donate) {
